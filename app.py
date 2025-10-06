@@ -13,10 +13,7 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 # Flask app setup
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
-app.config["SQLALCHEMY_DATABASE_URI"] = (
-    f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@"
-    f"{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
-)
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 
 db.init_app(app)
 
