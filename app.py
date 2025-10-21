@@ -2,7 +2,9 @@ import os
 from datetime import datetime, timezone
 from flask import Flask, redirect, url_for, session
 from flask_dance.contrib.github import make_github_blueprint, github
-from models import db, User
+from models import db, User , Organization
+from sqlalchemy.dialects.postgresql import JSONB
+from flask import jsonify
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -63,6 +65,28 @@ def index():
 def logout():
     session.clear()  # clear all session keys
     return "Logged out. You can now login again."
+
+@app.route("/api/organizations", methods=["GET"])
+def get_organizations():
+    organizations = Organization.query.all()
+    org_list = []
+    for org in organizations:
+        org_list.append({
+            "slug": org.slug,
+            "name": org.name,
+            "tagline": org.tagline,
+            "description": org.description,
+            "logo_url": org.logo_url,
+            "website_url": org.website_url,
+            "ideas_url": org.ideas_url,
+            "source_code_url": org.source_code_url,
+            "tech_tags": org.tech_tags or [],
+            "topic_tags": org.topic_tags or [],
+            "categories": org.categories or [],
+            "github_url": org.github_url,
+            "github_data": org.github_data or {}
+        })
+    return jsonify(org_list)
 
 if __name__ == "__main__":
     app.run(debug=True, host="127.0.0.1", port=5000)
