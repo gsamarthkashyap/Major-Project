@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from flask import Flask, redirect, url_for, session
 from flask_dance.contrib.github import make_github_blueprint, github
 from models import db, User , Organization
+from flask_cors import CORS
 from sqlalchemy.dialects.postgresql import JSONB
 from flask import jsonify
 from dotenv import load_dotenv
@@ -11,6 +12,7 @@ load_dotenv()
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'  # allow HTTP locally
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 db.init_app(app)
@@ -59,7 +61,9 @@ def index():
     user.last_login = datetime.now(timezone.utc)
     db.session.commit()
 
-    return f"Hello, {user.username}! You are logged in."
+    # return f"Hello, {user.username}! You are logged in."
+    return redirect("http://localhost:3000/Dashboard")
+
 
 @app.route("/logout")
 def logout():
