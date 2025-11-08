@@ -31,3 +31,22 @@ class Organization(db.Model):
     categories = db.Column(JSONB)
     github_url = db.Column(db.Text)
     github_data = db.Column(JSONB)
+
+
+class GithubMetrics(db.Model):
+    __tablename__ = "github_metrics"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.Text, nullable=False)
+    slug = db.Column(db.Text, unique=True, nullable=False)
+    github_followers = db.Column(db.Integer)
+    github_repos = db.Column(db.Integer)
+    github_bio = db.Column(db.Text)
+    fetched_at = db.Column(db.DateTime)
+    pull_requests = db.Column(db.Integer)
+    merged_prs = db.Column(db.Integer)
+    merge_frequency = db.Column(db.Float)  # Use Float for double precision
+
+    def __repr__(self):
+        return f"<GithubMetrics {self.name}>"
+

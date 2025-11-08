@@ -106,7 +106,7 @@ import os
 from datetime import datetime, timezone
 from flask import Flask, redirect, url_for, session, jsonify
 from flask_dance.contrib.github import make_github_blueprint, github
-from models import db, User, Organization
+from models import db, User, Organization, GithubMetrics
 from flask_cors import CORS
 from dotenv import load_dotenv
 
@@ -201,8 +201,20 @@ def get_organization(slug):
         (Organization.slug == slug) | (Organization.name.ilike(slug))
     ).first()
 
-    if not org:
-        return jsonify({"error": "Company not found"}), 404
+    # if not org:
+    #     return jsonify({"error": "Company not found"}), 404
+    
+     # Fetch the metrics record for this org (adjust the lookup as per your actual relation!)
+    metrics = GithubMetrics.query.filter_by(slug=org.slug).first() # or use org_id=org.id
+
+    # Compose the github_metrics dict using values directly from your DB
+    github_metrics = {
+        "github_repos": metrics.github_repos if metrics else None,
+        "pull_requests": metrics.pull_requests if metrics else None,
+        "merged_prs": metrics.merged_prs if metrics else None,
+        "merge_frequency": metrics.merge_frequency if metrics else None
+    }
+
 
     org_data = {
         "slug": org.slug,
@@ -218,7 +230,8 @@ def get_organization(slug):
         "categories": org.categories or [],
         "github_url": org.github_url,
         "github_repo": org.github_url,  # the field expected by frontend
-        "github_data": org.github_data or {}
+        "github_data": org.github_data or {},
+        "github_metrics": github_metrics or {}
     }
     return jsonify(org_data)
 
