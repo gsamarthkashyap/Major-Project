@@ -17,7 +17,7 @@ class User(db.Model):
     last_login = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class Organization(db.Model):
-    __tablename__ = "organisation"
+    __tablename__ = "gsoc_organizations"
     slug = db.Column(db.String, primary_key=True)
     name = db.Column(db.Text, nullable=False)
     tagline = db.Column(db.Text)

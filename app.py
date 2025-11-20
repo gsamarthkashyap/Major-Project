@@ -106,6 +106,7 @@ import os
 from datetime import datetime, timezone
 from flask import Flask, redirect, url_for, session, jsonify
 from flask_dance.contrib.github import make_github_blueprint, github
+from sqlalchemy import func
 from models import db, User, Organization, GithubMetrics
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -196,25 +197,27 @@ def get_organizations():
 
 @app.route("/api/organizations/<string:slug>", methods=["GET"])
 def get_organization(slug):
-    # Try by slug first, fallback to case-insensitive organization name
     org = Organization.query.filter(
         (Organization.slug == slug) | (Organization.name.ilike(slug))
     ).first()
 
-    # if not org:
-    #     return jsonify({"error": "Company not found"}), 404
-    
-     # Fetch the metrics record for this org (adjust the lookup as per your actual relation!)
-    metrics = GithubMetrics.query.filter_by(slug=org.slug).first() # or use org_id=org.id
+    if not org:
+        return jsonify({"error": "Organization not found"}), 404
 
-    # Compose the github_metrics dict using values directly from your DB
-    github_metrics = {
-        "github_repos": metrics.github_repos if metrics else None,
-        "pull_requests": metrics.pull_requests if metrics else None,
-        "merged_prs": metrics.merged_prs if metrics else None,
-        "merge_frequency": metrics.merge_frequency if metrics else None
-    }
+    # Direct database comparison - cleaner approach
+    metrics = db.session.query(GithubMetrics).filter(
+        func.lower(func.trim(GithubMetrics.slug)) == func.lower(func.trim(org.slug))
+    ).first()
 
+    github_metrics = {}
+    if metrics:
+        github_metrics = {
+            "github_followers": metrics.github_followers,
+            "github_repos": metrics.github_repos,
+            "pull_requests": metrics.pull_requests,
+            "merged_prs": metrics.merged_prs,
+            "merge_frequency": metrics.merge_frequency
+        }
 
     org_data = {
         "slug": org.slug,
@@ -229,9 +232,9 @@ def get_organization(slug):
         "topic_tags": org.topic_tags or [],
         "categories": org.categories or [],
         "github_url": org.github_url,
-        "github_repo": org.github_url,  # the field expected by frontend
+        "github_repo": org.github_url,
         "github_data": org.github_data or {},
-        "github_metrics": github_metrics or {}
+        "github_metrics": github_metrics
     }
     return jsonify(org_data)
 
