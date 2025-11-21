@@ -181,62 +181,75 @@ def get_organizations():
             "slug": org.slug,
             "name": org.name,
             "tagline": org.tagline,
-            "description": org.description,
+            # "description": getattr(org, "description", None),
             "logo_url": org.logo_url,
             "website_url": org.website_url,
-            "ideas_url": org.ideas_url,
-            "source_code_url": org.source_code_url,
-            "tech_tags": org.tech_tags or [],
-            "topic_tags": org.topic_tags or [],
-            "categories": org.categories or [],
-            "github_url": org.github_url,
-            "github_repo": org.github_url,  # so frontend can use it directly
-            "github_data": org.github_data or {}
+            "ideas_url": getattr(org, "ideas_url", None),  # Safe access
+            "source_code_url": getattr(org, "source_code_url", None),
+            "tech_tags": getattr(org, "tech_tags", []) or [],
+            "topic_tags": getattr(org, "topic_tags", []) or [],
+            "categories": getattr(org, "categories", []) or [],
+            "github_url": getattr(org, "github_url", None),
+            "github_repo": getattr(org, "github_url", None),  # Direct use
+            "github_data": getattr(org, "github_data", {}) or {}
         })
     return jsonify(org_list)
 
-@app.route("/api/organizations/<string:slug>", methods=["GET"])
-def get_organization(slug):
+@app.route("/api/organizations/<string:name>", methods=["GET"])
+def get_organization(name):
+    # Find Organization by name (case-insensitive, trimmed)
     org = Organization.query.filter(
-        (Organization.slug == slug) | (Organization.name.ilike(slug))
+        func.lower(func.trim(Organization.name)) == func.lower(func.trim(name))
     ).first()
-
     if not org:
         return jsonify({"error": "Organization not found"}), 404
 
-    # Direct database comparison - cleaner approach
-    metrics = db.session.query(GithubMetrics).filter(
-        func.lower(func.trim(GithubMetrics.slug)) == func.lower(func.trim(org.slug))
+    # Find GithubMetrics by organization name (case-insensitive, trimmed)
+    metrics = GithubMetrics.query.filter(
+        func.lower(func.trim(GithubMetrics.name)) == func.lower(func.trim(name))
     ).first()
 
     github_metrics = {}
     if metrics:
         github_metrics = {
+            "name": metrics.name,
+            "slug": metrics.slug,
             "github_followers": metrics.github_followers,
             "github_repos": metrics.github_repos,
+            "github_bio": metrics.github_bio,
+            "fetched_at": metrics.fetched_at,
             "pull_requests": metrics.pull_requests,
             "merged_prs": metrics.merged_prs,
             "merge_frequency": metrics.merge_frequency
         }
 
     org_data = {
+        "id": org.id,
         "slug": org.slug,
         "name": org.name,
-        "tagline": org.tagline,
-        "description": org.description,
         "logo_url": org.logo_url,
         "website_url": org.website_url,
-        "ideas_url": org.ideas_url,
-        "source_code_url": org.source_code_url,
+        "tagline": org.tagline,
+        "contact_links": org.contact_links or [],
+        "date_created": org.date_created,
         "tech_tags": org.tech_tags or [],
         "topic_tags": org.topic_tags or [],
         "categories": org.categories or [],
+        "program_slug": org.program_slug,
+        "logo_bg_color": org.logo_bg_color,
+        "description_html": org.description_html,
+        "ideas_list_url": org.ideas_list_url,
         "github_url": org.github_url,
-        "github_repo": org.github_url,
-        "github_data": org.github_data or {},
+        "github_followers": org.github_followers,
+        "github_repos": org.github_repos,
+        "github_bio": org.github_bio,
+        "year": org.year,
+        "fetched_at": org.fetched_at,
         "github_metrics": github_metrics
     }
     return jsonify(org_data)
+
+
 
 if __name__ == "__main__":
     with app.app_context():
